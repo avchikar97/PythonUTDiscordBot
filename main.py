@@ -4,6 +4,7 @@ import discord
 import twitterColorDetection
 from datetime import datetime
 from discord.ext import commands, tasks
+from discord.ext.commands import has_any_role
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -19,6 +20,8 @@ import icon_animator
 import json
 import csv
 import sympy.printing.preview
+
+import UTBotCheckers
 
 #Start logging
 logging.basicConfig(level=logging.INFO)
@@ -87,93 +90,6 @@ postsDB = PostsSession()
 #Discord client
 client = commands.Bot(command_prefix=CONFIG['prefix'])
 
-############
-###Checks###
-############
-
-
-async def is_admin(ctx):
-    """Checks if user has an admin role"""
-    admin_roles = {
-        'Founder': 469158572417089546,
-        'Moderator': 490250496028704768,
-        'UT Discord Admin': 667104998714245122
-    }
-
-    for role_id in admin_roles:
-        test_role = discord.utils.get(ctx.guild.roles, id=admin_roles[role_id])
-        if test_role in ctx.author.roles:
-            return True
-
-
-    await ctx.send("You do not have permission to do that")
-    return False
-
-async def in_secret_channel(ctx):
-    """Checks if a command was used in a secret channel"""
-    secretChannels = {
-        'ece-torture-dungeon': 508350921403662338,
-        'nitro-commands': 591363307487625227,
-        'eyes-of-texas': 532781500471443477
-    }
-    usedChannel = ctx.channel.id
-    for channel in secretChannels:
-        if secretChannels[channel] == usedChannel:
-            return True
-
-    #It dont exist
-    return False
-
-async def in_botspam(ctx):
-    """Checks if a command was done in a botspam channel"""
-    botspam = {
-        'eyes-of-texas': 532781500471443477,
-        'bot-commands': 469197513593847812,
-        'ece-torture-dungeon': 508350921403662338
-    }
-    used_channel = ctx.channel.id
-    for channel in botspam:
-        if botspam[channel] == used_channel:
-            return True
-
-    await ctx.send("Error: View the command list in a bot command channel like #voice-pastebin")
-    return False
-
-async def is_regular(ctx):
-    """Checks if they can be trusted to add help commands"""
-    regular_roles = {
-        'Founder': 469158572417089546,
-        'Moderator': 490250496028704768,
-        'UT Discord Admin': 667104998714245122
-    }
-
-    for role_id in regular_roles:
-        test_role = discord.utils.get(ctx.guild.roles, id=regular_roles[role_id])
-        if test_role in ctx.author.roles:
-            return True
-
-    await ctx.send("You do not have permission to do that")
-    return False
-
-async def is_nitro(ctx):
-    """Checks if a user has Discord Nitro"""
-    #Fake Nitro
-    role = discord.utils.get(ctx.guild.roles, id=591362960232808452)
-    if role in ctx.author.roles:
-        return True
-    #Real Nitro on test server
-    role = discord.utils.get(ctx.guild.roles, id=598292086067953664)
-    if role in ctx.author.roles:
-        return True
-    else:
-        return False
-
-async def is_brandon(ctx):
-    """Checks if I ran this"""
-    brandon = discord.utils.get(ctx.guild.members, id=158062741112881152)
-    return brandon == ctx.author
-
-
 ##################
 #Command Database#
 ##################
@@ -219,8 +135,8 @@ class CommandDB(commands.Cog):
         return
 
     @commands.command(name='cc', hidden=True)
-    @commands.check(is_admin)
-    @commands.check(in_secret_channel)
+    @has_any_role(UTBotCheckers.admin_roles)
+    @commands.check(UTBotCheckers.in_secret_channel)
     async def cc_command(self, ctx, command, *, _responce):
         """
         Modifies the command database
@@ -285,7 +201,7 @@ class CommandDB(commands.Cog):
         Bot will confirm with :ok_hand:
         
         """
-        if await is_regular(ctx) == True and await in_secret_channel(ctx) == True:
+        if await UTBotCheckers.is_regular(ctx) == True and await UTBotCheckers.in_secret_channel(ctx) == True:
             if ctx.message.mention_everyone == False:
                 CATEGORY = 'help'
                 await self.add_command(ctx, command, _responce, CATEGORY)
@@ -299,8 +215,8 @@ class CommandDB(commands.Cog):
     async def hc_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             if error.param.name == 'command':
-                #print(in_botspam(ctx))
-                if await in_botspam(ctx) == True:
+                #print(UTBotCheckers.in_botspam(ctx))
+                if await UTBotCheckers.in_botspam(ctx) == True:
                     #Output the command list
                     output = [""]
                     i = 0
@@ -331,7 +247,7 @@ class CommandDB(commands.Cog):
             #Responce be missing so yeet it
             elif error.param.name == '_responce':
                 #Make sure they be allowed
-                if await is_regular(ctx) == True and await in_secret_channel(ctx) == True:
+                if await UTBotCheckers.is_regular(ctx) == True and await UTBotCheckers.in_secret_channel(ctx) == True:
                     victim = session.query(CCCommand).filter_by(name=ctx.args[2]).one()
                     if victim.category == 'help':
                         await self.delete_command(ctx, victim)
@@ -345,8 +261,8 @@ class CommandDB(commands.Cog):
 
 
     @commands.command(name='cc-csv', hidden=True)
-    @commands.check(is_admin)
-    @commands.check(in_secret_channel)
+    @has_any_role(UTBotCheckers.admin_roles)
+    @commands.check(UTBotCheckers.in_secret_channel)
     async def cc_csv(self, ctx):
         """
         Generates a csv of the command database and posts it
@@ -360,8 +276,8 @@ class CommandDB(commands.Cog):
         os.remove('cc.csv')
 
     @commands.command(name='import-csv', hidden=True)
-    @commands.check(is_admin)
-    @commands.check(in_secret_channel)
+    @has_any_role(UTBotCheckers.admin_roles)
+    @commands.check(UTBotCheckers.in_secret_channel)
     async def import_csv(self, ctx, filename):
         """
         ONLY RUN THIS IF YOU KNOW WHAT YOU ARE DOING
@@ -417,7 +333,7 @@ class SportsTracking(commands.Cog):
     #Check if game is finished, if it is, stop the routine
 
     @commands.command(name='footballmode')
-    @commands.check(is_admin)
+    @has_any_role(UTBotCheckers.admin_roles)
     async def sports_icon_updater(self, ctx, game_id, is_home):
         """
         Starts the sports tracking
@@ -435,14 +351,14 @@ class SportsTracking(commands.Cog):
 
 
     @commands.command(name='stopfootball')
-    @commands.check(is_admin)
+    @has_any_role(UTBotCheckers.admin_roles)
     async def stop_loop(self, ctx):
         self.score_loop.cancel()
         logging.info("Stopping football mode")
 
     @tasks.loop(minutes=1)
     #@commands.command()
-    #@commands.check(is_admin)
+    #@has_any_role(UTBotCheckers.admin_roles)
     async def score_loop(self):
         """Loop used to check score"""
         #Check if game has started
@@ -571,7 +487,7 @@ class SetRank(commands.Cog):
         self.rankdb.commit()
 
     @commands.command(name='newrank')
-    @commands.check(is_admin)
+    @has_any_role(UTBotCheckers.admin_roles)
     async def newrank(self, ctx, *args):
         """
         Adds a new rank to the list of assignable ranks. 
@@ -621,7 +537,7 @@ class SetRank(commands.Cog):
         await ctx.message.add_reaction('👌')
 
     @commands.command(name="deleterank")
-    @commands.check(is_admin)
+    @has_any_role(UTBotCheckers.admin_roles)
     async def deleterank(self, ctx, *args):
         """
         Removes a rank or alias from the rank database. 
@@ -783,7 +699,7 @@ async def hello(ctx):
 
 
 @client.command(name='ip')
-#@commands.check(is_admin)
+#@has_any_role(UTBotCheckers.admin_roles)
 async def get_ip(ctx):
     """
     Provides the local IP's of the server
@@ -803,21 +719,21 @@ async def get_ip(ctx):
 
 
 @client.command(name='startvpn', hidden=True)
-@commands.check(is_brandon)
+@commands.check(UTBotCheckers.is_brandon)
 async def startvpn(ctx):
     await ctx.send("Attempting to start vpn, wish me luck")
     subprocess.run("/home/brandon/startvpn.sh")
 
 
 @client.command(name='usergraph', hidden=True)
-@commands.check(is_admin)
+@has_any_role(UTBotCheckers.admin_roles)
 async def usergraph(ctx):
     await joinChartGenerator(ctx)
 
 
 @client.command(name='userstats', hidden=True)
-@commands.check(is_admin)
-@commands.check(in_secret_channel)
+@has_any_role(UTBotCheckers.admin_roles)
+@commands.check(UTBotCheckers.in_secret_channel)
 async def userstats(ctx, *user):
     """
     Returns stats about the user, such as amount of monthly posts
@@ -848,22 +764,22 @@ async def userstats(ctx, *user):
 
 
     else:
-        found = False
+        authorEntry = None
         for instance in postsDB.query(posts).order_by(posts.name):
             if instance.name == user:
                 authorEntry = instance
                 found = True
                 break
 
-        if found == True:
+        if authorEntry != None:
             await ctx.send(f"{user} has {str(authorEntry.posts)} total posts and {str(authorEntry.animePosts)} posts in #anime this month")
         else:
             await ctx.send("User not found or has not posted yet this month")
 
 
 @client.command(name='degenerates', hidden=True)
-@commands.check(is_admin)
-@commands.check(in_secret_channel)
+@has_any_role(UTBotCheckers.admin_roles)
+@commands.check(UTBotCheckers.in_secret_channel)
 async def degenerates(ctx):
     """
     Returns a list of the top anime posters
@@ -898,7 +814,7 @@ async def degenerates(ctx):
 
 
 @client.command(name='updateicon', hidden=True)
-@commands.check(is_admin)
+@has_any_role(UTBotCheckers.admin_roles)
 async def updateicon(ctx, color):
     """
     Updates the server icon
@@ -1023,18 +939,16 @@ async def on_message(ctx):
 
     #Track messages and add stuff to database
     authorname = ctx.author.mention
+    authorEntry = None
 
     #Look if its in the database
-    found = False
     for instance in postsDB.query(posts).order_by(posts.name):
         if instance.name == authorname:
             authorEntry = instance
-            found = True
             break
 
-    if found == True:
+    if authorEntry != None:
         authorEntry.posts += 1
-
     else:
         authorEntry = posts(name=authorname, posts=1, animePosts=0, mentions=0, mentioned=0)
 
