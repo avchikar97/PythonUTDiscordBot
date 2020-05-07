@@ -21,7 +21,7 @@ import json
 import csv
 import sympy.printing.preview
 
-import UTBotCheckers
+from UTBotCheckers import UTBotCheckers
 
 #Start logging
 logging.basicConfig(level=logging.INFO)
@@ -51,6 +51,7 @@ else:
 engine = create_engine(CONFIG['database'], echo=False)
 postsEngine = create_engine("sqlite:///posts.db", echo=False)
 Base = declarative_base()
+UTBotChecker = UTBotCheckers()
 
 
 class CCCommand(Base):
@@ -99,7 +100,7 @@ class CommandDB(commands.Cog):
     Handles adding commands to a database
     """
 
-    async def add_command(self, ctx, command, _responce, _category):
+    async def add_command(self, ctx: commands.Context, command, _responce, _category):
         """
         Adds a command to the database
         Assumes user has permission to do it
@@ -118,7 +119,7 @@ class CommandDB(commands.Cog):
             new_command.responce,
             new_command.category)
 
-    async def delete_command(self, ctx, victim):
+    async def delete_command(self, ctx: commands.Context, victim):
         """
         Removed a command from the database
         Assumes the user has permission to do it
@@ -135,9 +136,9 @@ class CommandDB(commands.Cog):
         return
 
     @commands.command(name='cc', hidden=True)
-    @has_any_role(UTBotCheckers.admin_roles)
-    @commands.check(UTBotCheckers.in_secret_channel)
-    async def cc_command(self, ctx, command, *, _responce):
+    @has_any_role(UTBotChecker.admin_roles)
+    @commands.check(UTBotChecker.in_secret_channel)
+    async def cc_command(self, ctx: commands.Context, command, *, _responce):
         """
         Modifies the command database
 
@@ -158,7 +159,7 @@ class CommandDB(commands.Cog):
 
 
     @cc_command.error
-    async def cc_error(self, ctx, error):
+    async def cc_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingRequiredArgument):
             if error.param.name == 'command':
                 #Output command list
@@ -189,7 +190,7 @@ class CommandDB(commands.Cog):
 
 
     @commands.command(name='hc')
-    async def hc(self, ctx, command, *, _responce):
+    async def hc(self, ctx: commands.Context, command, *, _responce):
         """
         Shows troubleshooting command list
         Usage: !hc
@@ -201,7 +202,7 @@ class CommandDB(commands.Cog):
         Bot will confirm with :ok_hand:
         
         """
-        if await UTBotCheckers.is_regular(ctx) == True and await UTBotCheckers.in_secret_channel(ctx) == True:
+        if await UTBotChecker.is_regular(ctx) == True and await UTBotChecker.in_secret_channel(ctx) == True:
             if ctx.message.mention_everyone == False:
                 CATEGORY = 'help'
                 await self.add_command(ctx, command, _responce, CATEGORY)
@@ -212,11 +213,11 @@ class CommandDB(commands.Cog):
 
 
     @hc.error
-    async def hc_error(self, ctx, error):
+    async def hc_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingRequiredArgument):
             if error.param.name == 'command':
-                #print(UTBotCheckers.in_botspam(ctx))
-                if await UTBotCheckers.in_botspam(ctx) == True:
+                #print(UTBotChecker.in_botspam(ctx))
+                if await UTBotChecker.in_botspam(ctx) == True:
                     #Output the command list
                     output = [""]
                     i = 0
@@ -247,7 +248,7 @@ class CommandDB(commands.Cog):
             #Responce be missing so yeet it
             elif error.param.name == '_responce':
                 #Make sure they be allowed
-                if await UTBotCheckers.is_regular(ctx) == True and await UTBotCheckers.in_secret_channel(ctx) == True:
+                if await UTBotChecker.is_regular(ctx) == True and await UTBotChecker.in_secret_channel(ctx) == True:
                     victim = session.query(CCCommand).filter_by(name=ctx.args[2]).one()
                     if victim.category == 'help':
                         await self.delete_command(ctx, victim)
@@ -261,9 +262,9 @@ class CommandDB(commands.Cog):
 
 
     @commands.command(name='cc-csv', hidden=True)
-    @has_any_role(UTBotCheckers.admin_roles)
-    @commands.check(UTBotCheckers.in_secret_channel)
-    async def cc_csv(self, ctx):
+    @has_any_role(UTBotChecker.admin_roles)
+    @commands.check(UTBotChecker.in_secret_channel)
+    async def cc_csv(self, ctx: commands.Context):
         """
         Generates a csv of the command database and posts it
         """
@@ -276,9 +277,9 @@ class CommandDB(commands.Cog):
         os.remove('cc.csv')
 
     @commands.command(name='import-csv', hidden=True)
-    @has_any_role(UTBotCheckers.admin_roles)
-    @commands.check(UTBotCheckers.in_secret_channel)
-    async def import_csv(self, ctx, filename):
+    @has_any_role(UTBotChecker.admin_roles)
+    @commands.check(UTBotChecker.in_secret_channel)
+    async def import_csv(self, ctx: commands.Context, filename):
         """
         ONLY RUN THIS IF YOU KNOW WHAT YOU ARE DOING
         SO PROBABLY DON'T USE THIS COMMAND!!!!!!!!!!
@@ -333,8 +334,8 @@ class SportsTracking(commands.Cog):
     #Check if game is finished, if it is, stop the routine
 
     @commands.command(name='footballmode')
-    @has_any_role(UTBotCheckers.admin_roles)
-    async def sports_icon_updater(self, ctx, game_id, is_home):
+    @has_any_role(UTBotChecker.admin_roles)
+    async def sports_icon_updater(self, ctx: commands.Context, game_id, is_home):
         """
         Starts the sports tracking
         Inputs: ESPN Game ID, boolean for if home game (1 = home, 0 = away)
@@ -351,14 +352,14 @@ class SportsTracking(commands.Cog):
 
 
     @commands.command(name='stopfootball')
-    @has_any_role(UTBotCheckers.admin_roles)
-    async def stop_loop(self, ctx):
+    @has_any_role(UTBotChecker.admin_roles)
+    async def stop_loop(self, ctx: commands.Context):
         self.score_loop.cancel()
         logging.info("Stopping football mode")
 
     @tasks.loop(minutes=1)
     #@commands.command()
-    #@has_any_role(UTBotCheckers.admin_roles)
+    #@has_any_role(UTBotChecker.admin_roles)
     async def score_loop(self):
         """Loop used to check score"""
         #Check if game has started
@@ -430,7 +431,7 @@ class SportsTracking(commands.Cog):
         
 
     @commands.command()
-    async def cogtest(self, ctx):
+    async def cogtest(self, ctx: commands.Context):
         await ctx.send("Hello world!")
 
     
@@ -487,8 +488,8 @@ class SetRank(commands.Cog):
         self.rankdb.commit()
 
     @commands.command(name='newrank')
-    @has_any_role(UTBotCheckers.admin_roles)
-    async def newrank(self, ctx, *args):
+    @has_any_role(UTBotChecker.admin_roles)
+    async def newrank(self, ctx: commands.Context, *args):
         """
         Adds a new rank to the list of assignable ranks. 
         Make sure to put multi word stuff, like Class of 2023 in parenthesis
@@ -537,8 +538,8 @@ class SetRank(commands.Cog):
         await ctx.message.add_reaction('👌')
 
     @commands.command(name="deleterank")
-    @has_any_role(UTBotCheckers.admin_roles)
-    async def deleterank(self, ctx, *args):
+    @has_any_role(UTBotChecker.admin_roles)
+    async def deleterank(self, ctx: commands.Context, *args):
         """
         Removes a rank or alias from the rank database. 
         Include multi word ranks in " "
@@ -561,7 +562,7 @@ class SetRank(commands.Cog):
             await ctx.send("Error: Could not find rank")
 
 
-    async def embed_list_builder(self, ctx, all_ranks):
+    async def embed_list_builder(self, ctx: commands.Context, all_ranks):
         """
         Sends an embedded list of ranks to the output channel
         Gets around max of 1024 characters by breaking up into multiple messages
@@ -591,7 +592,7 @@ class SetRank(commands.Cog):
 
     @commands.command(name="ranks")
     #@commands.check(is_brandon)
-    async def rewrite_ranks(self, ctx):
+    async def rewrite_ranks(self, ctx: commands.Context):
         """
         PM's a list of ranks to the user
         """
@@ -634,7 +635,7 @@ class SetRank(commands.Cog):
 
     @commands.command(name='rank')
     #@commands.check(is_brandon)
-    async def rewrite_rank(self, ctx, *newRank):
+    async def rewrite_rank(self, ctx: commands.Context, *newRank):
         """
         Adds a rank from the database to a user
         """
@@ -692,15 +693,15 @@ async def on_ready():
 
 
 @client.command(name='hello')
-async def hello(ctx):
+async def hello(ctx: commands.Context):
     message = "Hello " + str(ctx.author).split('#')[0] + '!'
     await ctx.send(message)
     logmessage(ctx, message)
 
 
 @client.command(name='ip')
-#@has_any_role(UTBotCheckers.admin_roles)
-async def get_ip(ctx):
+#@has_any_role(UTBotChecker.admin_roles)
+async def get_ip(ctx: commands.Context):
     """
     Provides the local IP's of the server
     """
@@ -719,22 +720,22 @@ async def get_ip(ctx):
 
 
 @client.command(name='startvpn', hidden=True)
-@commands.check(UTBotCheckers.is_brandon)
-async def startvpn(ctx):
+@commands.check(UTBotChecker.is_brandon)
+async def startvpn(ctx: commands.Context):
     await ctx.send("Attempting to start vpn, wish me luck")
     subprocess.run("/home/brandon/startvpn.sh")
 
 
 @client.command(name='usergraph', hidden=True)
-@has_any_role(UTBotCheckers.admin_roles)
-async def usergraph(ctx):
+@has_any_role(UTBotChecker.admin_roles)
+async def usergraph(ctx: commands.Context):
     await joinChartGenerator(ctx)
 
 
 @client.command(name='userstats', hidden=True)
-@has_any_role(UTBotCheckers.admin_roles)
-@commands.check(UTBotCheckers.in_secret_channel)
-async def userstats(ctx, *user):
+@has_any_role(UTBotChecker.admin_roles)
+@commands.check(UTBotChecker.in_secret_channel)
+async def userstats(ctx: commands.Context, *user):
     """
     Returns stats about the user, such as amount of monthly posts
     Usage: $userstats @user
@@ -778,9 +779,9 @@ async def userstats(ctx, *user):
 
 
 @client.command(name='degenerates', hidden=True)
-@has_any_role(UTBotCheckers.admin_roles)
-@commands.check(UTBotCheckers.in_secret_channel)
-async def degenerates(ctx):
+@has_any_role(UTBotChecker.admin_roles)
+@commands.check(UTBotChecker.in_secret_channel)
+async def degenerates(ctx: commands.Context):
     """
     Returns a list of the top anime posters
     """
@@ -814,8 +815,8 @@ async def degenerates(ctx):
 
 
 @client.command(name='updateicon', hidden=True)
-@has_any_role(UTBotCheckers.admin_roles)
-async def updateicon(ctx, color):
+@has_any_role(UTBotChecker.admin_roles)
+async def updateicon(ctx: commands.Context, color):
     """
     Updates the server icon
     
@@ -836,7 +837,7 @@ async def updateicon(ctx, color):
 
 
 @client.command(name='score')
-async def score(ctx):
+async def score(ctx: commands.Context):
     await ctx.send("Texas beat OU 48 to 45 in the Red River Rivalry with a last second field goal by Dicker the Kicker! :metal:")
 
 @client.command(name='latex')
@@ -849,7 +850,7 @@ async def latexCommand(ctx, *args):
     os.remove('latex_output.png')
 
 @client.command(name='time')
-async def timeCommand(ctx):
+async def timeCommand(ctx: commands.Context):
     currentDT = datetime.now()
     outTime = currentDT.strftime("%I:%M %p")
     message = "It is " + outTime + " and OU still sucks!"
@@ -858,13 +859,13 @@ async def timeCommand(ctx):
 
 
 @client.command(name='hellothere')
-async def hellothere(ctx):
+async def hellothere(ctx: commands.Context):
     await ctx.author.send("General Kenobi, you are a bold one")
 
 
 #Requested by John in case he ever needs help
 @client.command(name='john', hidden=True)
-async def john(ctx):
+async def john(ctx: commands.Context):
     """
     https://youtu.be/Ho1LgF8ys-c
     """
@@ -884,7 +885,7 @@ async def john(ctx):
 
 
 @client.event
-async def on_command_error(ctx, error):
+async def on_command_error(ctx: commands.Context, error):
     if isinstance(error, commands.errors.CommandNotFound):
         #await ctx.send(ctx.message.content)
         command = ctx.message.content.lower()
@@ -901,7 +902,7 @@ async def on_command_error(ctx, error):
 
 
 @client.event
-async def on_message(ctx):
+async def on_message(ctx: commands.Context):
     #Add voting to suggestions channel
     if ctx.channel.id == 469191877489459220:
         #reactions = ['thumbsup', 'thumbsdown', 'shrug']
@@ -965,7 +966,7 @@ async def on_message(ctx):
 
 #Send a PM when someone joins
 @client.event
-async def on_member_join(ctx):
+async def on_member_join(ctx: commands.Context):
     newUserMessage = f"Welcome to the UT Austin Discord {ctx.mention}!  Please select which school/college you are in by using `$rank name of college` in the #bot-commands channel. "
     newUserMessage += "You can also select your graduating class and where you will be living.  "
     newUserMessage += "See the list of available schools/colleges, graduating classes, and communities by using `$ranks.` \n"
@@ -976,7 +977,7 @@ async def on_member_join(ctx):
 
 
 #Used to automatically update color
-async def on_updatecolor(ctx):
+async def on_updatecolor(ctx: commands.Context):
     try:
         towerRGB = twitterColorDetection.getRGB()
         towerColor = twitterColorDetection.getColorNames(towerRGB[0], towerRGB[1])
@@ -998,7 +999,7 @@ async def on_updatecolor(ctx):
 
 
 #Logs a message that is sent
-def logmessage(ctx, message):
+def logmessage(ctx: commands.Context, message):
     logging.info("Sent message '" + message + "' to " + ctx.channel.name)
 
 
