@@ -1,6 +1,8 @@
 # PythonUTDiscordBot
 Discord bot for the UT Discord server, written in Python
 
+Use `pip -r requirements.txt` to install all packages needed for this project.
+
 ## Tower Icon
 Normally, the icon for the server is based on the state of the UT tower.  The tower shines burnt orange at night for various events, such as after football game wins, graduation, or to celebrate a faculty member.  Using the command `$updateicon auto` will download a picture of the tower from tower.utexas.edu then find its average color.  It will then pick the icon that matches the color of the tower and set it as the icon for the community.  The icon is also user settable with the $updateicon command, with the options such as white, orange, orangewhite, and dark.  Each corresponds to a file in the bots code, with the name of the color being the name of the file to allow expandability of icons in the future.  
 
