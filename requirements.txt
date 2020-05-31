@@ -1,0 +1,7 @@
+discord
+sqlalchemy
+netifaces
+bs4
+PIL
+sympy
+requests

@@ -1,7 +1,8 @@
 from PIL import Image
-from aquireImage import aquireImage
 import time
 import requests
+
+from helpers.acquireImage import acquireImage
 
 def findColor(x1, y1, x2, y2, im):
     """
@@ -40,7 +41,7 @@ def getRGB():
     Outputs the RGB color values of the tower
     """
     #Get the image and its path
-    imagePath = aquireImage()
+    imagePath = acquireImage()
     #imagePath = "tower.jpg"
 
     if (imagePath == -1):
@@ -58,6 +59,7 @@ def getColorNames(baseColor, topColor):
     Inputs: Base and top RGB values
     Output: List of tower colors with base first and top second
     """
+    baseColorName, topColorName = ""
     if (100 < baseColor[0] < 175):
             if (50 < baseColor[1] < 150):
                     if (50 < baseColor[2] < 150):

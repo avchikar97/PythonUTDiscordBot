@@ -2,7 +2,7 @@
 
 import requests
 
-def aquireImage():
+def acquireImage():
     url = "http://wwc.instacam.com/instacamimg/UTAUS/UTAUS_l.jpg"
     img_data = requests.get(url).content
     with open("tower.jpg","wb") as handler:
@@ -12,4 +12,4 @@ def aquireImage():
 
     return path
 
-#aquireImage()
+#acquireImage()
