@@ -1,6 +1,4 @@
 from PIL import Image
-import time
-import requests
 
 from helpers.acquireImage import acquireImage
 

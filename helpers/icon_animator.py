@@ -7,7 +7,6 @@ Holds a function that animates two images
 import os
 from PIL import Image
 from numpy import arange
-import time
 
 
 def animate_icon(score, standard):
